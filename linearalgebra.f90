@@ -8,16 +8,19 @@ module linearalgebra
             integer, intent(in) :: m, n
             real, dimension(m,n), intent(in) :: A
             ! local data
-            integer :: i, j
+            integer :: i
+            !character (len=12) :: nstr, fmtstr
             ! processing
+            !write (nstr,*) n
+            !nstr = adjustl(nstr)
+            !fmtstr = '('//trim(nstr)//'f15.9)'
             do i = 1, m
-                j = 0
-                !write (*,'(3f16.3)') A(i,1:n)
-                write (*,*) (A(i,j),j=1,n)
+                !write (*,fmtstr) (A(i,j),j=1,n)
+                write (*,*) A(i,1:n)
             end do
             write (*,*)
         end subroutine printmatrix
-        
+
         ! return identity matrix
         function ident(n) result(I)
             ! dummy arguments
@@ -46,7 +49,7 @@ module linearalgebra
             ! local data
             integer :: i, j
             ! processing
-            call setseed(1000)
+            !call setseed(1000)
             do j = 1, n
                 do i = 1, m
                     A(i,j) = int(10.0 * randomreal()) - 5.0
@@ -97,7 +100,100 @@ module linearalgebra
             ! processing
             A(j,1:n) = A(j,1:n) + A(i,1:n)
         end subroutine addrows
-        
+
+        ! Row reduce matrix to row echelon form.
+        subroutine reducerows(n, A)
+            ! dummy arguments
+            integer, intent(in) :: n
+            real, dimension(n,n), intent(inout) :: A
+            ! local data
+            integer :: i, j
+            real :: multiplier
+            ! processing
+            do i = 1, n - 1
+                call pivot(n, n, i, A)
+                do j = i + 1, n
+                    multiplier = -A(j,i)/A(i,i)
+                    A(j,1:n) = multiplier*A(i,1:n) + A(j,1:n)
+                end do
+            end do
+            do i = n, 2, -1
+                do j = i - 1, 1, -1
+                    multiplier = -A(j,i)/A(i,i)
+                    A(j,1:n) = multiplier*A(i,1:n) + A(j,1:n)
+                end do
+            end do
+            do i = 1, n
+                multiplier = 1./A(i,i)
+                A(i,1:n) = multiplier*A(i,1:n)
+            end do
+        end subroutine reducerows
+
+        ! Row reduce matrix to row echelon form.
+        ! Also solves systems of linear equations.
+        subroutine rowechelon(m, n, A)
+            ! dummy arguments
+            integer, intent(in) :: m, n
+            real, dimension(m,n), intent(inout) :: A
+            ! local data
+            integer :: i, j
+            real :: multiplier
+            ! processing
+            do i = 1, m - 1
+                !call pivot(m, n, i, A)
+                do j = i + 1, m
+                    multiplier = -A(j,i)/A(i,i)
+                    A(j,1:n) = multiplier*A(i,1:n) + A(j,1:n)
+                end do
+            end do
+            do i = m, 2, -1
+                do j = i - 1, 1, -1
+                    multiplier = -A(j,i)/A(i,i)
+                    A(j,1:n) = multiplier*A(i,1:n) + A(j,1:n)
+                end do
+            end do
+            do i = 1, m
+                multiplier = 1./A(i,i)
+                A(i,1:n) = multiplier*A(i,1:n)
+            end do
+        end subroutine rowechelon
+
+        ! Row reduce matrix A to row echelon form.
+        ! Performs like operations on matrix B.
+        subroutine reducerows2(n, A, B)
+            ! dummy arguments
+            integer, intent(in) :: n
+            real, dimension(n,n), intent(inout) :: A, B
+            ! local data
+            double precision, parameter :: epsilon = tiny(1.)
+            integer :: i, j
+            real :: multiplier
+            ! processing
+            do i = 1, n - 1
+                if (abs(A(i,i)) .le. epsilon) cycle
+                call pivot2(n, n, i, A, B)
+                do j = i + 1, n
+                    multiplier = -A(j,i)/A(i,i)
+                    A(j,1:n) = multiplier*A(i,1:n) + A(j,1:n)
+                    B(j,1:n) = multiplier*B(i,1:n) + B(j,1:n)
+                end do
+            end do
+            do i = n, 2, -1
+                if (abs(A(i,i)) .le. epsilon) cycle
+                do j = i - 1, 1, -1
+                    multiplier = -A(j,i)/A(i,i)
+                    A(j,1:n) = multiplier*A(i,1:n) + A(j,1:n)
+                    B(j,1:n) = multiplier*B(i,1:n) + B(j,1:n)
+                end do
+            end do
+            do i = 1, n
+                if (abs(A(i,i)) .le. epsilon) cycle
+                multiplier = 1./A(i,i)
+                A(i,1:n) = multiplier*A(i,1:n)
+                B(i,1:n) = multiplier*B(i,1:n)
+            end do
+        end subroutine reducerows2
+
         ! LU decomposition
         subroutine lufact(n, A, L, U)
             ! dummy arguments
@@ -114,22 +210,45 @@ module linearalgebra
                 do j = i + 1, n
                     multiplier = -U(j,i)/U(i,i)
                     L(j,i) = -multiplier
-                    U(j,1:n) = multiplier*U(i,1:n) + U(j,1:n) 
+                    U(j,1:n) = multiplier*U(i,1:n) + U(j,1:n)
                 end do
             end do
         end subroutine lufact
-        
-        ! LUP factorization - result is no. of pivoting interchanges
-        function lupfact(n, A, L, U, P) result(s)
+
+        subroutine lupfact(n, A, L, U, P)
+            ! dummy arguments
+            integer, intent(in) :: n
+            real, dimension(n,n), intent(in) :: A
+            real, dimension(n,n), intent(out) :: L, U, P
+            !local data
+            integer :: i, j
+            real :: multiplier
+            ! processing
+            P = ident(n)    ! permuation matrix
+            L = ident(n)    ! lower triangular matrix
+            U = A           ! upper triangular matrix
+            do i = 1, n - 1
+                call pivot2(n, n, i, U, P)
+                do j = i + 1, n
+                    multiplier = -U(j,i)/U(i,i)
+                    L(j,i) = -multiplier
+                    U(j,1:n) = multiplier*U(i,1:n) + U(j,1:n)
+                end do
+            end do
+        end subroutine lupfact
+
+        ! LUP factorization and partial pivoting determinant
+        function determinant(n, A) result(det)
             ! dummy arguments
             integer, intent(in) :: n
             real, dimension(n, n), intent(in) :: A
-            real, dimension(n, n), intent(out) :: L, U, P
             ! function result location
-            integer :: s
+            real :: det
             ! local data
             integer :: i, j
-            real :: multiplier
+            real :: multiplier, s
+            real, dimension(n) :: diagonal
+            real, dimension(n,n) :: L, U, P
             ! processing
             s = 0
             P = ident(n)    ! permuation matrix
@@ -140,16 +259,12 @@ module linearalgebra
                 do j = i + 1, n
                     multiplier = -U(j,i)/U(i,i)
                     L(j,i) = -multiplier
-                    U(j,1:n) = multiplier*U(i,1:n) + U(j,1:n) 
+                    U(j,1:n) = multiplier*U(i,1:n) + U(j,1:n)
                 end do
             end do
-            print *, 'L'
-            call printmatrix(n, n, L)
-            print *, 'U'
-            call printmatrix(n, n, U)
-            print *, 'P'
-            call printmatrix(n, n, P)
-        end function lupfact
+            diagonal = (/ (U(i,i),i=1,n) /)
+            det = (-1)**s * product(diagonal)
+        end function determinant
 
         ! partial pivoting - row interchange only
         subroutine pivot(m, n, col, A)
@@ -167,6 +282,26 @@ module linearalgebra
                 if (maxidx .ne. i) call interchange(n, n, i, maxidx, A)
             end do
         end subroutine pivot
+
+        ! partial pivoting - row interchange only - move 2nd matrix in parallel
+        subroutine pivot2(m, n, col, A, B)
+            ! dummy arguments
+            integer, intent(in) :: m, n, col
+            real, dimension(m,n), intent(inout) :: A, B
+            ! local data
+            integer :: i, j, maxidx
+            ! processing
+            do i = col, n - 1
+                maxidx = i
+                do j = i + 1, n
+                    if (abs(A(j,col)) > abs(A(maxidx,col))) maxidx = j
+                end do
+                if (maxidx .ne. i) then
+                    call interchange(n, n, i, maxidx, A)
+                    call interchange(n, n, i, maxidx, B)
+                end if
+            end do
+        end subroutine pivot2
 
         ! partial pivoting with permutation matrix
         ! result is no. of substitutions along the way
@@ -192,7 +327,7 @@ module linearalgebra
                 end if
             end do
         end function pivotp
-        
+
         ! dot product
         function dot(n, A, B) result(r)
             ! dummy argument
@@ -216,28 +351,38 @@ module linearalgebra
             real, dimension(n,n) :: L, U
             ! processing
             call lufact(n, A, L, U)
-            r = 1.0
-            do i = 1, n
-                r = r * U(i,i)
-            end do
+            r = product( (/ (U(i,i),i=1,n) /) )
         end function det
 
-        ! determinant using partial pivoting
-        function detp(n, A) result(r)
-            ! dummy argument
+        ! Matrix inversion, Gaussian elimination with partial pivoting.
+        function matinv(n, A) result(AINV)
+            ! dummy arguments
             integer, intent(in) :: n
-            real, dimension(n), intent(in) :: A
+            real, dimension(n,n), intent(in) :: A
             ! function result location
-            real :: r
+            real, dimension(n,n) :: AINV
             ! local data
-            integer :: i, s
-            real, dimension(n,n) :: L, U, P
+            real, dimension(n,n) :: ACOPY
             ! processing
-            s = lupfact(n, A, L, U, P)
-            r = 1.0
-            do i = 1, n
-                r = r * U(i,i)
-            end do
-            r = -1**s * r
-        end function detp        
+            ACOPY = A
+            AINV = ident(n)
+            call reducerows2(n, ACOPY, AINV)
+        end function matinv
+
+        ! Solve system of linear equations
+        function linsys(n, A, x) result(y)
+            ! dummy arguments
+            integer, intent(in) :: n
+            real, dimension(n,n), intent(in) :: A
+            real, dimension(n), intent(in) :: x
+            ! function result location
+            real, dimension(n) :: y
+            ! local data
+            real, dimension(n,n+1) :: T
+            ! processing
+            T(1:n,1:n) = A
+            T(1:n,n+1) = x
+            call rowechelon(n, n+1, T)
+            y = T(1:n,n+1)
+        end function linsys
 end module linearalgebra
