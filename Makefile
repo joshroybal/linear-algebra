@@ -1,8 +1,7 @@
 FC = gfortran
-FCFLAGS = -pedantic-errors -std=f95 -Wall -Wextra -Werror -O2 -g
-FLFLAGS =
-SRC = linearalgebra.f90 driver.f90
-OBJ = ${SRC:.f90=.o}
+FCFLAGS = -pedantic-errors -std=f95 -Wall -Wextra -Werror -fcheck=all -fbacktrace -O2
+FLFLAGS = -static -s
+OBJ = driver.o linearalgebra.o
 BIN = driver
 
 $(BIN): $(OBJ)
@@ -10,6 +9,9 @@ $(BIN): $(OBJ)
 
 %.o: %.f90
 	$(FC) -c $< $(FCFLAGS)
+
+linearalgebra.mod := linearalgebra.o
+driver.o: $(linearalgebra.mod)
 
 .PHONY: clean
 clean:

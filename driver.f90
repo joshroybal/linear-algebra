@@ -7,6 +7,7 @@ program driver
     double precision, dimension(N) :: x, y, err
     double precision, dimension(N,N) :: A, AINV, L, U, P
     ! processing
+    !write (*,'(a,/)') 'CONTENT-TYPE: US-ASCII'
     A(:n,1) = (/2.,4.,8.,6./)
     A(:n,2) = (/1.,3.,7.,7./)
     A(:n,3) = (/1.,3.,3.,9./)
@@ -15,51 +16,51 @@ program driver
     call random_number(x)
     !A = floor(10. * A)
     x = floor(10. * x)
-    call lufact(N, A, L, U)
-    AINV = matinv(N, A)
-    d = det(N, A)
+    call lufact(A, L, U)
+    AINV = matinv(A)
+    d = det(A)
     write (*,*) 'no pivoting'
     write (*,*) 'A'
-    call printmatrix(N, N, A)
+    call printmatrix(A)
     write (*,*) 'L'
-    call printmatrix(N, N, L)
+    call printmatrix(L)
     write (*,*) 'U'
-    call printmatrix(N, N, U)
+    call printmatrix(U)
     write (*,*) 'L * U'
-    call printmatrix(N, N, matmul(L, U))
+    call printmatrix(matmul(L, U))
     write (*,*) '|A| =', d
     write (*,*) 'AINV'
-    call printmatrix(N, N, AINV)
+    call printmatrix(AINV)
     write (*,*) 'A * AINV'
-    call printmatrix(N, N, matmul(A, AINV))
+    call printmatrix(matmul(A, AINV))
     write (*,*) 'AINV * A'
-    call printmatrix(N, N, matmul(AINV, A))
+    call printmatrix(matmul(AINV, A))
     ! with partial pivoting
     write (*,*) 'partial pivoting'
-    call lupfact(N, A, L, U, P)
-    d = determinant(N, A)
+    call lupfact(A, L, U, P)
+    d = determinant(A)
     write (*,*) 'L'
-    call printmatrix(N, N, L)
+    call printmatrix(L)
     write (*,*) 'U'
-    call printmatrix(N, N, U)
+    call printmatrix(U)
     write (*,*) 'P'
-    call printmatrix(N, N, P)
+    call printmatrix(P)
     write (*,*) 'P * A'
-    call printmatrix(N, N, matmul(P, A))
+    call printmatrix(matmul(P, A))
     write (*,*) 'L * U'
-    call printmatrix(N, N, matmul(L, U))
+    call printmatrix(matmul(L, U))
     write (*,*) '|A| =', d
     write (*,*) 'system of linear equations'
     write (*,*) 'A'
-    call printmatrix(N, N, A)
+    call printmatrix(A)
     write (*,*) 'x'
-    call printmatrix(N, 1, x)
-    y = linsys(N, A, x)
+    call printvector(x)
+    y = linsys(A, x)
     write (*,*) 'sol''n vector y'
-    call printmatrix(N, 1, y)
+    call printvector(y)
     write (*,*) 'A * y'
-    call printmatrix(N, 1, matmul(A, y))
+    call printvector(matmul(A, y))
     err = abs(matmul(A, y) - x)
     write (*,*) 'error vector'
-    call printmatrix(N, 1, err)
+    call printvector(err)
 end program driver
