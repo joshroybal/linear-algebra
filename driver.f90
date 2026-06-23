@@ -1,66 +1,58 @@
 program driver
-    use linearalgebra
+    use matrix
     implicit none
     ! data
-    integer, parameter :: N = 4
-    double precision :: d
-    double precision, dimension(N) :: x, y, err
-    double precision, dimension(N,N) :: A, AINV, L, U, P
+    integer :: i
+    double precision, allocatable, dimension(:,:) :: a, ainv, l, u, p
     ! processing
-    !write (*,'(a,/)') 'CONTENT-TYPE: US-ASCII'
-    A(:n,1) = (/2.,4.,8.,6./)
-    A(:n,2) = (/1.,3.,7.,7./)
-    A(:n,3) = (/1.,3.,3.,9./)
-    A(:n,4) = (/0.,1.,5.,8./)
-    !call random_number(A)
-    call random_number(x)
-    !A = floor(10. * A)
-    x = floor(10. * x)
-    call lufact(A, L, U)
-    AINV = matinv(A)
-    d = det(A)
-    write (*,*) 'no pivoting'
-    write (*,*) 'A'
-    call printmatrix(A)
-    write (*,*) 'L'
-    call printmatrix(L)
-    write (*,*) 'U'
-    call printmatrix(U)
-    write (*,*) 'L * U'
-    call printmatrix(matmul(L, U))
-    write (*,*) '|A| =', d
-    write (*,*) 'AINV'
-    call printmatrix(AINV)
-    write (*,*) 'A * AINV'
-    call printmatrix(matmul(A, AINV))
-    write (*,*) 'AINV * A'
-    call printmatrix(matmul(AINV, A))
-    ! with partial pivoting
-    write (*,*) 'partial pivoting'
-    call lupfact(A, L, U, P)
-    d = determinant(A)
-    write (*,*) 'L'
-    call printmatrix(L)
-    write (*,*) 'U'
-    call printmatrix(U)
-    write (*,*) 'P'
-    call printmatrix(P)
-    write (*,*) 'P * A'
-    call printmatrix(matmul(P, A))
-    write (*,*) 'L * U'
-    call printmatrix(matmul(L, U))
-    write (*,*) '|A| =', d
-    write (*,*) 'system of linear equations'
-    write (*,*) 'A'
-    call printmatrix(A)
-    write (*,*) 'x'
-    call printvector(x)
-    y = linsys(A, x)
-    write (*,*) 'sol''n vector y'
-    call printvector(y)
-    write (*,*) 'A * y'
-    call printvector(matmul(A, y))
-    err = abs(matmul(A, y) - x)
-    write (*,*) 'error vector'
-    call printvector(err)
-end program driver
+    do i = 2, 5
+        allocate(a(i,i))
+        allocate(ainv(i,i))
+        allocate(l(i,i))
+        allocate(u(i,i))
+        allocate(p(i,i))
+        call random_number(a)
+        a = aint(20 * a - 10)
+        write (*,*) 'A'
+        call dump(a)
+
+        write (*,*) '|A| =', determinant(a)
+        call matinv(a, ainv)
+
+        write (*,*) 'INV(A)'
+        call dump(ainv)
+        write (*,*) 'A * INV(A)'
+        call dump(matmul(a, ainv))
+
+        write (*,*) 'LU factorization'
+        call lufact(a, l, u)
+        write (*,*) 'L'
+        call dump(l)
+        write (*,*) 'U'
+        call dump(u)
+        write (*,*) 'error'
+        call dump(matmul(u, l) - a)
+
+        write (*,*) 'LUP factorization'
+        write (*,*) 'A'
+        call dump(a)
+        call lupfact(a, l, u, p)
+        write (*,*) 'L'
+        call dump(l)
+        write (*,*) 'U'
+        call dump(u)
+        write (*,*) 'P'
+        call dump(p)
+        write (*,*) 'PA'
+        call dump(matmul(a, p))
+        write (*,*) 'LU'
+        call dump(matmul(u, l))
+        write (*,*) 'error'
+        call dump(matmul(matmul(u, l), transpose(p)) - a)
+        deallocate(a)
+        deallocate(ainv)
+        deallocate(l)
+        deallocate(u)
+        deallocate(p)
+    end do
+end program
